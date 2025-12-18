@@ -4,127 +4,96 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bản đồ Đường thủy Đà Nẵng</title>
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <script src="https://unpkg.com/leaflet-kml@1.0.0/L.KML.js"></script>
-
     <style>
-        /* Thiết kế bản đồ tràn toàn màn hình */
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        #map { width: 100%; height: 100vh; }
-
-        /* Trang trí khung thông tin Popup */
-        .custom-popup table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .custom-popup table td { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 13px; }
-        .custom-popup h3 { margin: 0; color: #d35400; border-bottom: 2px solid #d35400; padding-bottom: 5px; }
-        
-        /* Nút định vị */
-        .locate-button {
-            position: absolute; top: 100px; left: 10px; z-index: 1000;
-            background: white; padding: 10px; border-radius: 5px;
-            cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            font-weight: bold; border: none;
-        }
-        .locate-button:hover { background: #f4f4f4; }
+        body { margin: 0; padding: 0; }
+        #map { width: 100%; height: 100vh; background: #aad3df; }
+        .custom-popup { min-width: 200px; font-family: Arial, sans-serif; }
+        .custom-popup h3 { margin: 0 0 10px 0; color: #d35400; border-bottom: 2px solid #f39c12; padding-bottom: 5px; }
+        .custom-popup table { width: 100%; border-collapse: collapse; }
+        .custom-popup td { padding: 5px 0; border-bottom: 1px solid #eee; font-size: 13px; color: #333; }
+        .custom-popup td:first-child { font-weight: bold; color: #555; }
     </style>
 </head>
 <body>
-
-    <button class="locate-button" onclick="findMyState()">📍 Vị trí của tôi</button>
     <div id="map"></div>
 
-    <script>
-        // 1. KHỞI TẠO BẢN ĐỒ (Mặc định ở Đà Nẵng)
-        var map = L.map('map').setView([16.0544, 108.2022], 12);
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-kml@1.0.0/L.KML.js"></script>
 
-        // 2. LỚP NỀN GOOGLE MAPS (Dạng Hybrid: Vệ tinh + Tên đường)
-        var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    <script>
+        var map = L.map('map').setView([16.0544, 108.2022], 10);
+
+        L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-            attribution: 'Map data &copy; Google'
+            attribution: 'Google Maps'
         }).addTo(map);
 
-        // 3. XỬ LÝ FILE KML
-        fetch('dn34.kml')
-            .then(res => {
-                if (!res.ok) throw new Error("Không tìm thấy file duongthuy.kml");
-                return res.text();
-            })
+        fetch('Bandoduongthuy.kml')
+            .then(res => res.text())
             .then(kmltext => {
                 const parser = new DOMParser();
                 const kml = parser.parseFromString(kmltext, 'text/xml');
                 const track = new L.KML(kml);
-
-                // Duyệt qua từng vùng (Polygon) hoặc đường (Line) trong KML
+                
                 track.eachLayer(function(layer) {
-    if (layer.feature && layer.feature.properties) {
-        const p = layer.feature.properties;
-        
-        // Tạo tiêu đề Popup
-        let content = `<div style="font-family: Arial; min-width: 180px;">`;
-        content += `<h4 style="margin: 0 0 8px 0; color: #d35400; border-bottom: 2px solid #f39c12;">${p.name || "Thông tin chi tiết"}</h4>`;
-        content += `<table style="width: 100%; border-collapse: collapse;">`;
+                    // Lấy dữ liệu properties
+                    let props = layer.feature ? layer.feature.properties : {};
+                    
+                    // Nếu properties trống, thử tìm trong ExtendedData thủ công
+                    if (Object.keys(props).length <= 1) { 
+                        // Lấy thẻ XML gốc của layer này
+                        const xmlElement = layer._kmlEntity || (layer.feature ? layer.feature.originalFeature : null);
+                        if (xmlElement) {
+                             const dataTags = xmlElement.getElementsByTagName('Data');
+                             for (let i = 0; i < dataTags.length; i++) {
+                                 const name = dataTags[i].getAttribute('name');
+                                 const value = dataTags[i].getElementsByTagName('value')[0]?.textContent;
+                                 if (name && value) props[name] = value;
+                             }
+                        }
+                    }
 
-        // Tự động quét tất cả dữ liệu ẩn trong ExtendedData
-        for (let key in p) {
-            if (!['name', 'styleUrl', 'styleHash', 'description'].includes(key)) {
-                // Làm đẹp tên hiển thị
-                let label = key.replace('ten_xa', 'Tên').replace('dtich_km2', 'Diện tích (km²)').replace('dan_so', 'Dân số').replace('matdo_km2', 'Mật độ');
-                content += `<tr>
-                                <td style="padding: 4px 0; border-bottom: 1px solid #eee;"><b>${label}:</b></td>
-                                <td style="padding: 4px 0; border-bottom: 1px solid #eee; text-align: right;">${p[key]}</td>
-                            </tr>`;
-            }
-        }
+                    // Xây dựng bảng nội dung Popup
+                    let tableRows = "";
+                    const labels = {
+                        "ten_xa": "Tên đơn vị",
+                        "loai": "Phân loại",
+                        "dtich_km2": "Diện tích (km²)",
+                        "dan_so": "Dân số (người)",
+                        "matdo_km2": "Mật độ dân số"
+                    };
 
-        content += `</table></div>`;
-        layer.bindPopup(content);
+                    for (let key in props) {
+                        if (!['name', 'styleUrl', 'styleHash', 'description', 'stroke', 'fill'].includes(key)) {
+                            let labelName = labels[key] || key;
+                            tableRows += `<tr><td>${labelName}</td><td style="text-align:right">${props[key]}</td></tr>`;
+                        }
+                    }
 
-        // Chỉnh màu sắc cho vùng xịn hơn
-        layer.setStyle({
-            fillColor: '#f1c40f',
-            fillOpacity: 0.4,
-            color: '#2980b9',
-            weight: 1
-        });
-    }
-});
+                    const popupHtml = `
+                        <div class="custom-popup">
+                            <h3>${props.name || props.ten_xa || "Thông tin"}</h3>
+                            <table>${tableRows || "<tr><td>Không có dữ liệu chi tiết</td></tr>"}</table>
+                        </div>
+                    `;
+                    
+                    layer.bindPopup(popupHtml);
+                    
+                    layer.setStyle({
+                        fillColor: '#f1c40f',
+                        fillOpacity: 0.3,
+                        color: '#2980b9',
+                        weight: 1
+                    });
+                });
 
                 map.addLayer(track);
-
-                // Tự động thu phóng bản đồ cho vừa với dữ liệu KML
                 const bounds = track.getBounds();
                 if (bounds.isValid()) map.fitBounds(bounds);
             })
-            .catch(err => console.error("Lỗi nạp KML:", err));
-
-        // 4. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
-        function findMyState() {
-            if (!navigator.geolocation) {
-                alert("Trình duyệt không hỗ trợ định vị!");
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
-                // Thêm marker tại vị trí người dùng
-                var userMarker = L.marker([lat, lng]).addTo(map)
-                    .bindPopup("<b>Bạn đang ở đây!</b>").openPopup();
-
-                // Vẽ vòng tròn độ chính xác
-                L.circle([lat, lng], { radius: position.coords.accuracy, color: 'blue', fillOpacity: 0.1 }).addTo(map);
-
-                map.setView([lat, lng], 15);
-            }, function() {
-                alert("Không thể truy cập vị trí. Hãy kiểm tra cài đặt trình duyệt.");
-            });
-        }
+            .catch(e => console.error("Lỗi nạp file:", e));
     </script>
 </body>
 </html>
-
-
