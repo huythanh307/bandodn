@@ -59,36 +59,38 @@
 
                 // Duyệt qua từng vùng (Polygon) hoặc đường (Line) trong KML
                 track.eachLayer(function(layer) {
-                    if (layer.feature && layer.feature.properties) {
-                        const props = layer.feature.properties;
-                        
-                        // Tạo bảng thông tin động từ tất cả dữ liệu có trong ExtendedData
-                        let tableContent = "";
-                        for (let key in props) {
-                            if (!['name', 'styleUrl', 'styleHash', 'description'].includes(key)) {
-                                // Đổi tên hiển thị cho đẹp (tùy chọn)
-                                let label = key.replace('dtich_km2', 'Diện tích (km²)').replace('dan_so', 'Dân số').replace('matdo_km2', 'Mật độ');
-                                tableContent += `<tr><td><b>${label}:</b></td><td style="text-align:right">${props[key]}</td></tr>`;
-                            }
-                        }
+    if (layer.feature && layer.feature.properties) {
+        const p = layer.feature.properties;
+        
+        // Tạo tiêu đề Popup
+        let content = `<div style="font-family: Arial; min-width: 180px;">`;
+        content += `<h4 style="margin: 0 0 8px 0; color: #d35400; border-bottom: 2px solid #f39c12;">${p.name || "Thông tin chi tiết"}</h4>`;
+        content += `<table style="width: 100%; border-collapse: collapse;">`;
 
-                        let popupHtml = `
-                            <div class="custom-popup">
-                                <h3>${props.name || "Thông tin vùng"}</h3>
-                                <table>${tableContent}</table>
-                            </div>
-                        `;
-                        layer.bindPopup(popupHtml);
+        // Tự động quét tất cả dữ liệu ẩn trong ExtendedData
+        for (let key in p) {
+            if (!['name', 'styleUrl', 'styleHash', 'description'].includes(key)) {
+                // Làm đẹp tên hiển thị
+                let label = key.replace('ten_xa', 'Tên').replace('dtich_km2', 'Diện tích (km²)').replace('dan_so', 'Dân số').replace('matdo_km2', 'Mật độ');
+                content += `<tr>
+                                <td style="padding: 4px 0; border-bottom: 1px solid #eee;"><b>${label}:</b></td>
+                                <td style="padding: 4px 0; border-bottom: 1px solid #eee; text-align: right;">${p[key]}</td>
+                            </tr>`;
+            }
+        }
 
-                        // Thiết kế màu sắc vùng cho chuyên nghiệp
-                        layer.setStyle({
-                            fillColor: '#f1c40f',
-                            fillOpacity: 0.4,
-                            color: '#2980b9',
-                            weight: 1.5
-                        });
-                    }
-                });
+        content += `</table></div>`;
+        layer.bindPopup(content);
+
+        // Chỉnh màu sắc cho vùng xịn hơn
+        layer.setStyle({
+            fillColor: '#f1c40f',
+            fillOpacity: 0.4,
+            color: '#2980b9',
+            weight: 1
+        });
+    }
+});
 
                 map.addLayer(track);
 
@@ -124,4 +126,5 @@
     </script>
 </body>
 </html>
+
 
