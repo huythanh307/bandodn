@@ -1,58 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>Bản đồ Đường thủy Đà Nẵng</title>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản đồ Đường thủy Đà Nẵng</title>
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://unpkg.com/leaflet-kml@1.0.0/L.KML.js"></script>
+
     <style>
-        body { margin: 0; padding: 0; }
+        /* Thiết kế bản đồ tràn toàn màn hình */
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         #map { width: 100%; height: 100vh; }
+
+        /* Trang trí khung thông tin Popup */
+        .custom-popup table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .custom-popup table td { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 13px; }
+        .custom-popup h3 { margin: 0; color: #d35400; border-bottom: 2px solid #d35400; padding-bottom: 5px; }
+        
+        /* Nút định vị */
+        .locate-button {
+            position: absolute; top: 100px; left: 10px; z-index: 1000;
+            background: white; padding: 10px; border-radius: 5px;
+            cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            font-weight: bold; border: none;
+        }
+        .locate-button:hover { background: #f4f4f4; }
     </style>
 </head>
 <body>
+
+    <button class="locate-button" onclick="findMyState()">📍 Vị trí của tôi</button>
     <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-kml@1.0.0/L.KML.js"></script>
-
     <script>
-        // Khởi tạo bản đồ với lớp nền Google Maps Hybrid (Vệ tinh + Tên đường)
-        var map = L.map('map').setView([16.0544, 108.2022], 13);
-        
-        L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{
+        // 1. KHỞI TẠO BẢN ĐỒ (Mặc định ở Đà Nẵng)
+        var map = L.map('map').setView([16.0544, 108.2022], 12);
+
+        // 2. LỚP NỀN GOOGLE MAPS (Dạng Hybrid: Vệ tinh + Tên đường)
+        var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20,
-            subdomains:['mt0','mt1','mt2','mt3']
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: 'Map data &copy; Google'
         }).addTo(map);
 
-        // Hàm nạp KML
-        fetch('dn34.kml')
+        // 3. XỬ LÝ FILE KML
+        fetch('duongthuy.kml')
             .then(res => {
-                if (!res.ok) throw new Error('Không tìm thấy file dn34.kml!');
+                if (!res.ok) throw new Error("Không tìm thấy file duongthuy.kml");
                 return res.text();
             })
             .then(kmltext => {
                 const parser = new DOMParser();
                 const kml = parser.parseFromString(kmltext, 'text/xml');
                 const track = new L.KML(kml);
-                track.setStyle
-                ({
-                color: '#FF1814', // Màu xanh cyan cho nổi bật
-                weight: 2,        // Độ dày của đường
-                opacity: 0.05      // Độ trong suốt
-                });
-map.addLayer(track);
 
-                // Căn chỉnh khung hình
+                // Duyệt qua từng vùng (Polygon) hoặc đường (Line) trong KML
+                track.eachLayer(function(layer) {
+                    if (layer.feature && layer.feature.properties) {
+                        const props = layer.feature.properties;
+                        
+                        // Tạo bảng thông tin động từ tất cả dữ liệu có trong ExtendedData
+                        let tableContent = "";
+                        for (let key in props) {
+                            if (!['name', 'styleUrl', 'styleHash', 'description'].includes(key)) {
+                                // Đổi tên hiển thị cho đẹp (tùy chọn)
+                                let label = key.replace('dtich_km2', 'Diện tích (km²)').replace('dan_so', 'Dân số').replace('matdo_km2', 'Mật độ');
+                                tableContent += `<tr><td><b>${label}:</b></td><td style="text-align:right">${props[key]}</td></tr>`;
+                            }
+                        }
+
+                        let popupHtml = `
+                            <div class="custom-popup">
+                                <h3>${props.name || "Thông tin vùng"}</h3>
+                                <table>${tableContent}</table>
+                            </div>
+                        `;
+                        layer.bindPopup(popupHtml);
+
+                        // Thiết kế màu sắc vùng cho chuyên nghiệp
+                        layer.setStyle({
+                            fillColor: '#f1c40f',
+                            fillOpacity: 0.4,
+                            color: '#2980b9',
+                            weight: 1.5
+                        });
+                    }
+                });
+
+                map.addLayer(track);
+
+                // Tự động thu phóng bản đồ cho vừa với dữ liệu KML
                 const bounds = track.getBounds();
-                if (bounds.isValid()) {
-                    map.fitBounds(bounds);
-                    console.log("Đã hiển thị dữ liệu KML thành công!");
-                }
+                if (bounds.isValid()) map.fitBounds(bounds);
             })
-            .catch(err => {
-                console.error("Lỗi: ", err.message);
-                alert("Lỗi: " + err.message + ". Hãy kiểm tra tên file KML của bạn.");
+            .catch(err => console.error("Lỗi nạp KML:", err));
+
+        // 4. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
+        function findMyState() {
+            if (!navigator.geolocation) {
+                alert("Trình duyệt không hỗ trợ định vị!");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Thêm marker tại vị trí người dùng
+                var userMarker = L.marker([lat, lng]).addTo(map)
+                    .bindPopup("<b>Bạn đang ở đây!</b>").openPopup();
+
+                // Vẽ vòng tròn độ chính xác
+                L.circle([lat, lng], { radius: position.coords.accuracy, color: 'blue', fillOpacity: 0.1 }).addTo(map);
+
+                map.setView([lat, lng], 15);
+            }, function() {
+                alert("Không thể truy cập vị trí. Hãy kiểm tra cài đặt trình duyệt.");
             });
+        }
     </script>
 </body>
 </html>
