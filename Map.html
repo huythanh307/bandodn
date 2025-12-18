@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bản đồ Đường thủy Đà Nẵng</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100%; height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-kml@1.0.0/L.KML.js"></script>
+
+    <script>
+        // Khởi tạo bản đồ với lớp nền Google Maps Hybrid (Vệ tinh + Tên đường)
+        var map = L.map('map').setView([16.0544, 108.2022], 13);
+        
+        L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3']
+        }).addTo(map);
+
+        // Hàm nạp KML
+        fetch('dn34.kml')
+            .then(res => {
+                if (!res.ok) throw new Error('Không tìm thấy file dn34.kml!');
+                return res.text();
+            })
+            .then(kmltext => {
+                const parser = new DOMParser();
+                const kml = parser.parseFromString(kmltext, 'text/xml');
+                const track = new L.KML(kml);
+                track.setStyle
+                ({
+                color: '#FF1814', // Màu xanh cyan cho nổi bật
+                weight: 2,        // Độ dày của đường
+                opacity: 0.05      // Độ trong suốt
+                });
+map.addLayer(track);
+
+                // Căn chỉnh khung hình
+                const bounds = track.getBounds();
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds);
+                    console.log("Đã hiển thị dữ liệu KML thành công!");
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi: ", err.message);
+                alert("Lỗi: " + err.message + ". Hãy kiểm tra tên file KML của bạn.");
+            });
+    </script>
+</body>
+</html>
