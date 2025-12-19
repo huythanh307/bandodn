@@ -83,10 +83,10 @@
                     // Thiết lập màu sắc mặc định cho các vùng
                     style: function(feature) {
                         return {
-                            fillColor: '#f1c40f', 
-                            fillOpacity: 0.05,
+                           // fillColor: '#f1c40f', 
+                            fillOpacity: 0.000001,
                             color: getRandomColor(),     
-                            weight: 3
+                            weight: 2
                         };
                     },
                     // Xử lý Popup và Hiệu ứng chuột cho từng vùng
@@ -130,9 +130,9 @@
                             mouseover: function(e) {
                                 var l = e.target;
                                 l.setStyle({
-                                    weight: 5,          // Làm viền dày lên hẳn
+                                    weight: 3.5,          // Làm viền dày lên hẳn
                                     color: '#ffffff',   // Đổi viền thành màu trắng sáng
-                                    fillOpacity: 0.1    // Làm vùng đó hiện rõ hơn
+                                    fillOpacity: 0.01    // Làm vùng đó hiện rõ hơn
                                 });
                                 l.bringToFront();       // Đưa vùng này lên trên cùng để viền không bị đè
                             },
@@ -160,3 +160,4 @@
     </script>
 </body>
 </html>
+
