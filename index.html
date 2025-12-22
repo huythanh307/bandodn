@@ -29,6 +29,26 @@
         .info-popup td { padding: 5px 0; border-bottom: 1px solid #eee; font-size: 13px; }
         .info-popup td:first-child { font-weight: bold; color: #555; }
 
+        /* CSS ĐỂ HIỆN CHỮ "CHỌN BẢN ĐỒ" */
+        .leaflet-control-layers-toggle:after {
+            content: " Chọn loại bản đồ"; 
+            color: #333;
+            font-weight: bold;
+            font-size: 14px;
+            padding-left: 30px; /* Đẩy chữ qua để không đè lên icon */
+            line-height: 36px;
+            white-space: nowrap;
+        }
+        .leaflet-control-layers-toggle {
+            width: auto !important; /* Cho phép nút giãn rộng theo chữ */
+            height: 36px !important;
+            padding: 0 10px;
+            background-position: 5px center !important; /* Đẩy icon sang trái */
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
     </style>
 </head>
 <body>
@@ -58,21 +78,15 @@
         });
 
         // 3. Tạo nút chọn chế độ bản đồ (Control Layers)
-        var baseMaps = {
+        var baseMaps = 
+        {
             "Vệ tinh": googleHybrid,
             "Giao thông": googleRoadmap,
             "Địa hình": googleTerrain
         };
         L.control.layers(baseMaps).addTo(map);
 
-        // 4. Thêm lớp nền Google Maps (Vệ tinh Hybrid)
-        L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0','mt1','mt2','mt3'],
-            attribution: 'Google Maps'
-        }).addTo(map);
-
-        // 5. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
+        // 4. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
         function findMyState() {
             if (!navigator.geolocation) {
                 alert("Trình duyệt không hỗ trợ định vị!");
@@ -157,7 +171,7 @@
                                 var l = e.target;
                                 l.setStyle({
                                     weight: 5,          // Làm viền dày lên hẳn
-                                    color: '#ffffff',   // Đổi viền thành màu trắng sáng
+                                    color: '#FF0000',   // Đổi viền thành màu đỏ sáng
                                     fillOpacity: 0.01    // Làm vùng đó hiện rõ hơn
                                 });
                                 l.bringToFront();       // Đưa vùng này lên trên cùng để viền không bị đè
