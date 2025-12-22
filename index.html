@@ -36,17 +36,43 @@
     <div id="map"></div>
 
     <script>
-        // 1. Khởi tạo bản đồ
-        var map = L.map('map').setView([16.0544, 108.2022], 11);
 
-        // 2. Thêm lớp nền Google Maps (Vệ tinh Hybrid)
+        // 1. Định nghĩa các loại nền Google Maps
+        var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: 'Google Hybrid'
+        });
+
+        var googleRoadmap = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: 'Google Roadmap'
+        });
+
+        var googleTerrain = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+            maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: 'Google Terrain'
+        });
+
+        // 2. Khởi tạo bản đồ với nền mặc định là Hybrid
+        var map = L.map('map', {
+            center: [16.0544, 108.2022],
+            zoom: 11,
+            layers: [googleHybrid] // Nền mặc định
+        });
+
+        // 3. Tạo nút chọn chế độ bản đồ (Control Layers)
+        var baseMaps = {
+            "Vệ tinh": googleHybrid,
+            "Giao thông": googleRoadmap,
+            "Địa hình": googleTerrain
+        };
+        L.control.layers(baseMaps).addTo(map);
+
+        // 4. Thêm lớp nền Google Maps (Vệ tinh Hybrid)
         L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0','mt1','mt2','mt3'],
             attribution: 'Google Maps'
         }).addTo(map);
 
-        // 3. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
+        // 5. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
         function findMyState() {
             if (!navigator.geolocation) {
                 alert("Trình duyệt không hỗ trợ định vị!");
@@ -70,10 +96,10 @@
             });
             }
 
-// 4. LOAD FILE map.json (Định dạng GeoJSON)
-        let geoJsonLayer; // Khai báo biến để có thể dùng hàm resetStyle
+            // 6. LOAD FILE map.json (Định dạng GeoJSON)
+            let geoJsonLayer; // Khai báo biến để có thể dùng hàm resetStyle
 
-        fetch('map.geojson') 
+            fetch('map.geojson') 
             .then(res => {
                 if (!res.ok) throw new Error("Không tìm thấy file map.json");
                 return res.json();
@@ -130,7 +156,7 @@
                             mouseover: function(e) {
                                 var l = e.target;
                                 l.setStyle({
-                                    weight: 3.5,          // Làm viền dày lên hẳn
+                                    weight: 5,          // Làm viền dày lên hẳn
                                     color: '#ffffff',   // Đổi viền thành màu trắng sáng
                                     fillOpacity: 0.01    // Làm vùng đó hiện rõ hơn
                                 });
@@ -160,4 +186,3 @@
     </script>
 </body>
 </html>
-
