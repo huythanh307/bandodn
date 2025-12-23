@@ -135,7 +135,8 @@
             let geoJsonLayer; // Khai báo biến để có thể dùng hàm resetStyle
 
             fetch('map.geojson') 
-            .then(res => {
+            .then(res => 
+            {
                 if (!res.ok) throw new Error("Không tìm thấy file map.json");
                 return res.json();
             })
@@ -159,8 +160,8 @@
                             const p = feature.properties;
                             let rows = "";
                             const labels = {
-                                "ten_xa": "Tên phường/xã",
-                                "loai": "Phân loại",
+                                //"ten_xa": "Tên phường/xã",
+                                //"loai": "Phân loại",
                                 "dan_so": "Dân số",
                                 "dtich_km2": "Diện tích (km²)",
                                 "matdo_km2": "Mật độ"
@@ -169,7 +170,8 @@
                             for (let key in p) 
                             {
                                 const keysToHide = ['name', 'styleUrl', 'styleHash', 'description', 
-                                'stroke', 'fill', 'fill-opacity', 'stroke-opacity', 'stroke-width', 'Tên phường/xã',];
+                                'stroke', 'fill', 'fill-opacity', 'stroke-opacity', 'stroke-width', 
+                                'Tên phường/xã', 'ten_xa', 'loai',];
 
                                 if (!keysToHide.includes(key)) 
                                 {
@@ -177,11 +179,14 @@
                                     rows += `<tr><td>${displayLabel}</td><td style="text-align:right">${p[key]}</td></tr>`;
                                 }
                             }
+                            
+                            // Tạo nội dung tiêu đề kết hợp: Loại + Tên (Ví dụ: Xã Tây Giang)
+                            let fullTitle = (p.loai ? p.loai + " " : "") + (p.ten_xa || p.name || "Thông tin"); 
 
-                            let content = `
+                           let content = `
                                 <div class="info-popup">
-                                    <h3>${p.ten_xa || p.name || 'Thông tin'}</h3>
-                                    <table>${rows}</table>
+                                <h3 style="color: #0026FF; border-bottom: 2px solid #FF6A00;">${fullTitle}</h3>
+                                <table>${rows}</table>
                                 </div>`;
                             layer.bindPopup(content);
                         }
