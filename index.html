@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bản đồ GeoJSON Đà Nẵng</title>
+    <title>Bản đồ Đà Nẵng</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -23,15 +23,15 @@
         .locate-button:hover { background: #f4f4f4; }
 
         /* Trang trí Popup */
-        .info-popup { min-width: 200px; }
+        .info-popup { min-width: 120px; }
         .info-popup h3 { margin: 0 0 10px 0; color: #d35400; border-bottom: 2px solid #f39c12; }
         .info-popup table { width: 100%; border-collapse: collapse; }
-        .info-popup td { padding: 5px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+        .info-popup td { padding: 5px 0; border-bottom: 1px solid #eee; font-size: 10px; }
         .info-popup td:first-child { font-weight: bold; color: #555; }
 
         /* CSS ĐỂ HIỆN CHỮ "CHỌN BẢN ĐỒ" */
         .leaflet-control-layers-toggle:after {
-            content: " Chọn loại bản đồ"; 
+            content: "Chọn loại bản đồ"; 
             color: #333;
             font-weight: bold;
             font-size: 14px;
@@ -86,7 +86,28 @@
         };
         L.control.layers(baseMaps).addTo(map);
 
-        // 4. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
+        // 4. Hàm tính toán độ đậm nhạt dựa trên Zoom (Từ 15 về 0)
+        function calculateOpacity(currentZoom) {
+            let baseOpacity = 0.05; 
+            if (currentZoom <= 15) {
+                // Cứ giảm 1 độ zoom (từ 15 về 0) thì tăng 0.1
+                let diff = 12 - currentZoom;
+                return baseOpacity + (diff * 0.1);
+            }
+            return baseOpacity;
+        }
+
+        // 5. SỰ KIỆN THAY ĐỔI ĐỘ ĐẬM KHI PHÓNG TO/THU NHỎ
+        map.on('zoomend', function() {
+            if (geoJsonLayer) {
+                let newOpacity = calculateOpacity(map.getZoom());
+                geoJsonLayer.eachLayer(function(layer) {
+                    layer.setStyle({ fillOpacity: newOpacity });
+                });
+            }
+        });
+
+        // 6. CHỨC NĂNG ĐỊNH VỊ NGƯỜI DÙNG
         function findMyState() {
             if (!navigator.geolocation) {
                 alert("Trình duyệt không hỗ trợ định vị!");
