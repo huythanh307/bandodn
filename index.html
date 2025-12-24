@@ -26,9 +26,22 @@
         .info-popup td:first-child { font-weight: bold; color: #555; }
 
         .leaflet-control-layers-toggle:after {
-            content: " Chọn loại bản đồ"; 
-            color: #333; font-weight: bold; font-size: 14px;
-            padding-left: 30px; line-height: 36px; white-space: nowrap;
+            content: "Chọn loại bản đồ"; 
+            color: #333;
+            font-weight: bold;
+            font-size: 14px;
+            padding-left: 30px; /* Đẩy chữ qua để không đè lên icon */
+            line-height: 36px;
+            white-space: nowrap;
+        }
+        .leaflet-control-layers-toggle {
+            width: auto !important; /* Cho phép nút giãn rộng theo chữ */
+            height: 36px !important;
+            padding: 0 10px;
+            background-position: 5px center !important; /* Đẩy icon sang trái */
+            text-decoration: none;
+            display: flex;
+            align-items: center;
         }
 
         /* Style cho nhãn tên đường */
