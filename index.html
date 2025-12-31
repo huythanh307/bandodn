@@ -12,12 +12,19 @@
         body { margin: 0; padding: 0; font-family: sans-serif; }
         #map { width: 100%; height: 100vh; }
         
-        .locate-button {
-            position: absolute; bottom: 100px; right: 10px; z-index: 500;
+        /* Nhóm các nút điều khiển */
+        .controls-container {
+            position: absolute; bottom: 30px; right: 20px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .locate-button, .share-button {
             background: white; padding: 10px; border-radius: 5px;
             cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            font-weight: bold; border: none;
+            font-weight: bold; border: none; width: 100%;
         }
+        
+        .share-button { background: #4CAF50; color: white; }
 
         .info-popup { min-width: 120px; }
         .info-popup h3 { margin: 0 0 10px 0; color: #d35400; border-bottom: 2px solid #f39c12; }
@@ -27,46 +34,34 @@
 
         .leaflet-control-layers-toggle:after {
             content: "Chọn loại bản đồ"; 
-            color: #333;
-            font-weight: bold;
-            font-size: 14px;
-            padding-left: 30px; /* Đẩy chữ qua để không đè lên icon */
-            line-height: 36px;
-            white-space: nowrap;
+            color: #333; font-weight: bold; font-size: 14px;
+            padding-left: 30px; line-height: 36px; white-space: nowrap;
         }
         .leaflet-control-layers-toggle {
-            width: auto !important; /* Cho phép nút giãn rộng theo chữ */
-            height: 36px !important;
-            padding: 0 10px;
-            background-position: 5px center !important; /* Đẩy icon sang trái */
-            text-decoration: none;
-            display: flex;
-            align-items: center;
+            width: auto !important; height: 36px !important;
+            padding: 0 10px; background-position: 5px center !important;
+            text-decoration: none; display: flex; align-items: center;
         }
 
-        /* Style cho nhãn tên đường */
         .road-label {
-            background: none;
-            color: rgb(252, 2, 2);
-            padding: 2px 8px;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: bold;
-            white-space: nowrap;
-            border: none;
-            text-align: center;
-            text-shadow: #eee 2px 2px 4px;
-            pointer-events: none; /* Quan trọng: Click xuyên qua nhãn */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            background: none; color: rgb(252, 2, 2); padding: 2px 8px;
+            font-size: 14px; font-weight: bold; white-space: nowrap;
+            border: none; text-align: center; text-shadow: #eee 2px 2px 4px;
+            pointer-events: none; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
-    <button class="locate-button" onclick="findMyState()">📍 Vị trí của tôi</button>
+    <div class="controls-container">
+        <button class="share-button" onclick="shareLocation()">🔗 Chia sẻ vị trí</button>
+        <button class="locate-button" onclick="findMyState()">📍 Vị trí của tôi</button>
+    </div>
+    
     <div id="map"></div>
 
     <script>
         var map = L.map('map', { center: [16.0544, 108.2022], zoom: 11 });
+        var currentUserPos = null; // Biến lưu vị trí để chia sẻ
 
         var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], attribution: 'Google Hybrid'
@@ -83,29 +78,19 @@
         var baseMaps = { "Vệ tinh": googleHybrid, "Giao thông": googleRoadmap, "Địa hình": googleTerrain };
         L.control.layers(baseMaps).addTo(map);
 
-        // Biến quản lý
         let geoJsonLayer, dtLayer;
-        let labelLayer = L.layerGroup().addTo(map); // Group chứa nhãn
+        let labelLayer = L.layerGroup().addTo(map);
 
-        // --- HÀM TÍNH TOÁN VỊ TRÍ NHÃN ĐỘNG ---
         function updateVisibleLabels() {
-            // 1. Xóa hết nhãn cũ
             labelLayer.clearLayers();
-
-            // 2. Chỉ hiện khi Zoom >= 10 và dtLayer đã tải xong
             if (map.getZoom() < 10) return;
             if (!dtLayer) return;
-
-            // 3. Lấy khung nhìn hiện tại (Bounds)
             const bounds = map.getBounds();
 
-            // 4. Duyệt qua từng con đường
             dtLayer.eachLayer(function(layer) {
                 const props = layer.feature.properties;
                 if (!props || !props.name) return;
 
-                // Lấy tất cả các điểm tọa độ của con đường
-                // Xử lý trường hợp LineString và MultiLineString
                 let latlngs = [];
                 if (layer.feature.geometry.type === 'LineString') {
                     latlngs = layer.getLatLngs();
@@ -113,29 +98,17 @@
                     layer.getLatLngs().forEach(arr => latlngs.push(...arr));
                 }
 
-                // 5. Lọc ra các điểm ĐANG NẰM TRONG MÀN HÌNH
                 const visiblePoints = latlngs.filter(p => bounds.contains(p));
-
-                // Nếu có điểm nào đó hiển thị trên màn hình
                 if (visiblePoints.length > 0) {
-                    // Tính trung bình cộng lat/lng để tìm điểm giữa màn hình
                     let latSum = 0, lngSum = 0;
-                    visiblePoints.forEach(p => {
-                        latSum += p.lat;
-                        lngSum += p.lng;
-                    });
-                    
-                    const centerLat = latSum / visiblePoints.length;
-                    const centerLng = lngSum / visiblePoints.length;
-                    const dynamicCenter = L.latLng(centerLat, centerLng);
+                    visiblePoints.forEach(p => { latSum += p.lat; lngSum += p.lng; });
+                    const dynamicCenter = L.latLng(latSum / visiblePoints.length, lngSum / visiblePoints.length);
 
-                    // Tạo nhãn tại vị trí động này
                     L.marker(dynamicCenter, {
                         icon: L.divIcon({
                             className: 'road-label-container',
                             html: `<div class="road-label">${props.name}</div>`,
-                            iconSize: [8, 20],
-                            iconAnchor: [40, 20] // Căn giữa
+                            iconSize: [8, 20], iconAnchor: [40, 20]
                         }),
                         interactive: false
                     }).addTo(labelLayer);
@@ -143,10 +116,8 @@
             });
         }
 
-        // --- SỰ KIỆN QUAN TRỌNG: CẬP NHẬT KHI DI CHUYỂN/ZOOM ---
         map.on('moveend', updateVisibleLabels);
 
-        // Hàm tính độ đậm nhạt
         function calculateOpacity(currentZoom) {
             let baseOpacity = 0.05; 
             if (currentZoom <= 15) {
@@ -196,7 +167,6 @@
             });
         }
 
-        // Tải dữ liệu
         fetch('map.geojson') 
             .then(res => res.json())
             .then(data => {
@@ -204,28 +174,46 @@
                     style: function() { return { fillOpacity: 0.000001, color: getRandomColor(), weight: 1 }; },
                     onEachFeature: onEachFeatureHandler
                 }).addTo(map);
-
                 return fetch('DT.geojson');
             })
             .then(res => res.json())
             .then(data => {
                 dtLayer = L.geoJSON(data, {
                     style: function() { return { color: '#000000', weight: 4, opacity: 1 }; },
-                    onEachFeature: onEachFeatureHandler // Chỉ bind popup/hover, không tạo nhãn tĩnh nữa
+                    onEachFeature: onEachFeatureHandler
                 }).addTo(map);
-                
                 dtLayer.bringToFront();
-                
-                // Chạy hàm cập nhật nhãn lần đầu tiên
                 updateVisibleLabels();
             });
 
+        // CẬP NHẬT HÀM ĐỊNH VỊ
         function findMyState() {
             navigator.geolocation.getCurrentPosition(function(p) {
                 const lat = p.coords.latitude, lng = p.coords.longitude;
-                L.marker([lat, lng]).addTo(map).bindPopup("<b>Bạn đang ở đây!</b>").openPopup();
-                map.setView([lat, lng], 15);
+                currentUserPos = [lat, lng]; // Lưu lại tọa độ
+                L.marker(currentUserPos).addTo(map).bindPopup("<b>Bạn đang ở đây!</b>").openPopup();
+                map.setView(currentUserPos, 15);
             });
+        }
+
+        // THÊM HÀM CHIA SẺ VỊ TRÍ
+        function shareLocation() {
+            if (!currentUserPos) {
+                alert("Vui lòng nhấn 'Vị trí của tôi' trước khi chia sẻ!");
+                return;
+            }
+            const url = `https://www.google.com/maps?q=${currentUserPos[0]},${currentUserPos[1]}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Vị trí của tôi',
+                    text: 'Xem vị trí của mình trên bản đồ nhé:',
+                    url: url
+                }).catch(err => console.log('Lỗi chia sẻ:', err));
+            } else {
+                navigator.clipboard.writeText(url);
+                alert("Link vị trí đã được copy vào bộ nhớ tạm!");
+            }
         }
 
         function getRandomColor() {
