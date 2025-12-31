@@ -53,7 +53,7 @@
 </head>
 <body>
     <div class="controls-container">
-        <button class="share-button" onclick="shareLocation()">🔗 Chia sẻ vị trí</button>
+        <button class="share-button" onclick="shareLocation()">🔗 Chia sẻ vị trí của tôi</button>
         <button class="locate-button" onclick="findMyState()">📍 Vị trí của tôi</button>
     </div>
     
@@ -207,7 +207,7 @@
             if (navigator.share) {
                 navigator.share({
                     title: 'Vị trí của tôi',
-                    text: 'Xem vị trí của mình trên bản đồ nhé:',
+                    text: 'Vị trí của tôi',
                     url: url
                 }).catch(err => console.log('Lỗi chia sẻ:', err));
             } else {
