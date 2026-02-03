@@ -67,14 +67,36 @@
             color: white;
         }
 
+        /* 1. Loại bỏ độ rộng tối thiểu mặc định của Leaflet */
         .info-popup {
-            min-width: 120px;
+            min-width: auto !important;
+            display: inline-block;
         }
+
+
 
         .info-popup h3 {
             margin: 0 0 10px 0;
             color: #0026FF;
             border-bottom: 2px solid #FF6A00;
+        }
+
+        /* Popup đường ĐT */
+        .info-popup h4 {
+            margin: 0;
+            color: #0026FF;
+            white-space: nowrap;
+            /* Ép chữ không được xuống dòng */
+            border-bottom: none;
+            /* Xóa gạch chân vệt cam */
+        }
+
+        /* 3. QUAN TRỌNG: Thu nhỏ khoảng trắng của bong bóng Leaflet */
+        .leaflet-popup-content {
+            margin: 7px 15px !important;
+            /* Chỉnh lại khoảng cách từ chữ tới viền popup trắng */
+            width: auto !important;
+            /* Ép khung trắng co lại theo nội dung */
         }
 
         .info-popup table {
@@ -145,7 +167,7 @@
     <script>
         var map = L.map('map', { center: [16.0544, 108.2022], zoom: 11 });
         var currentUserPos = null;
-        var lastHighlightedLayer = null; // Lưu lại đường đang được chọn để bôi đỏ
+        var lastHighlightedLayer = null;
 
         var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google Hybrid'
@@ -202,22 +224,31 @@
 
         map.on('moveend', updateVisibleLabels);
 
+        // HÀM XỬ LÝ SỰ KIỆN CHO MỖI ĐỐI TƯỢNG
         function onEachFeatureHandler(feature, layer) {
             if (feature.properties) {
                 const p = feature.properties;
-                let rows = "";
                 const labels = { "dan_so": "Dân số", "dtich_km2": "Diện tích (km²)", "matdo_km2": "Mật độ" };
                 const keysToHide = ['name', 'styleUrl', 'styleHash', 'description', 'stroke', 'fill', 'fill-opacity', 'stroke-opacity', 'stroke-width', 'Tên phường/xã', 'ten_xa', 'loai'];
 
-                for (let key in p) {
-                    if (!keysToHide.includes(key)) {
-                        let displayLabel = labels[key] || key;
-                        rows += `<tr><td>${displayLabel}</td><td style="text-align:right">${p[key]}</td></tr>`;
-                    }
-                }
-
                 let fullTitle = (p.loai ? p.loai + " " : "") + (p.ten_xa || p.name || "Thông tin");
-                layer.bindPopup(`<div class="info-popup"><h3>${fullTitle}</h3><table>${rows}</table></div>`);
+
+                // KIỂM TRA: Nếu là dữ liệu đường (DT.geojson)
+                if (feature.geometry.type === "LineString" || feature.geometry.type === "MultiLineString") {
+                    // Chỉ hiển thị tiêu đề tên đường, không tạo bảng thuộc tính
+                    layer.bindPopup(`<div class="info-popup"><h4>${fullTitle}</h4></div>`);
+                }
+                // Ngược lại nếu là dữ liệu vùng (map.geojson)
+                else {
+                    let rows = "";
+                    for (let key in p) {
+                        if (!keysToHide.includes(key)) {
+                            let displayLabel = labels[key] || key;
+                            rows += `<tr><td>${displayLabel}</td><td style="text-align:right">${p[key]}</td></tr>`;
+                        }
+                    }
+                    layer.bindPopup(`<div class="info-popup"><h3>${fullTitle}</h3><table>${rows}</table></div>`);
+                }
             }
 
             layer.on({
@@ -228,9 +259,8 @@
                     }
                 },
                 mouseout: function (e) {
-                    // Nếu không phải đường đang được chọn từ bảng, thì reset style
                     if (e.target !== lastHighlightedLayer) {
-                        if (dtLayer && e.target.feature.geometry.type === "LineString") {
+                        if (dtLayer && (e.target.feature.geometry.type === "LineString" || e.target.feature.geometry.type === "MultiLineString")) {
                             dtLayer.resetStyle(e.target);
                         } else {
                             geoJsonLayer.resetStyle(e.target);
@@ -240,7 +270,6 @@
             });
         }
 
-        // Tải dữ liệu và khởi tạo bảng chọn đường
         fetch('map.geojson')
             .then(res => res.json())
             .then(data => {
@@ -258,7 +287,6 @@
                 }).addTo(map);
                 dtLayer.bringToFront();
 
-                // KHỞI TẠO BẢNG CHỌN ĐƯỜNG
                 const roadSelect = document.getElementById('road-select');
                 let roadNames = [];
 
@@ -268,7 +296,6 @@
                     }
                 });
 
-                // Lọc trùng và sắp xếp tên đường theo bảng chữ cái
                 [...new Set(roadNames)].sort().forEach(name => {
                     let option = document.createElement('option');
                     option.value = name;
@@ -283,7 +310,6 @@
         function zoomToRoad(roadName) {
             if (!roadName) return;
 
-            // Reset đường cũ nếu có
             if (lastHighlightedLayer) {
                 dtLayer.resetStyle(lastHighlightedLayer);
             }
@@ -291,14 +317,12 @@
             dtLayer.eachLayer(function (layer) {
                 if (layer.feature.properties.name === roadName) {
                     lastHighlightedLayer = layer;
-
-                    // Phóng to đến đường đó
                     map.fitBounds(layer.getBounds(), { padding: [50, 50] });
 
-                    // Bôi đỏ và làm dày
+                    // Thiết lập bôi đỏ (#FD800) và làm dày (8)
                     layer.setStyle({
                         color: '#FFD800',
-                        weight: 10,
+                        weight: 8,
                         opacity: 1
                     });
                     layer.bringToFront();
