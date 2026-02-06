@@ -168,6 +168,8 @@
         var map = L.map('map', { center: [16.0544, 108.2022], zoom: 11 });
         var currentUserPos = null;
         var lastHighlightedLayer = null;
+        var currentUserMarker = null;
+        var locationIntervalId = null;
 
         var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
             maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: 'Google Hybrid'
@@ -335,8 +337,29 @@
             navigator.geolocation.getCurrentPosition(function (p) {
                 const lat = p.coords.latitude, lng = p.coords.longitude;
                 currentUserPos = [lat, lng];
-                L.marker(currentUserPos).addTo(map).bindPopup("<b>Bạn đang ở đây!</b>").openPopup();
+
+                if (currentUserMarker) {
+                    map.removeLayer(currentUserMarker);
+                }
+
+                currentUserMarker = L.marker(currentUserPos).addTo(map).bindPopup("<b>Bạn đang ở đây!</b>").openPopup();
                 map.setView(currentUserPos, 15);
+
+                if (!locationIntervalId) {
+                    locationIntervalId = setInterval(function () {
+                        navigator.geolocation.getCurrentPosition(function (p) {
+                            const lat = p.coords.latitude, lng = p.coords.longitude;
+                            currentUserPos = [lat, lng];
+
+                            if (currentUserMarker) {
+                                map.removeLayer(currentUserMarker);
+                            }
+
+                            currentUserMarker = L.marker(currentUserPos).addTo(map).bindPopup("<b>Bạn đang ở đây!</b>");
+                            map.setView(currentUserPos, 15);
+                        });
+                    }, 5000);
+                }
             });
         }
 
