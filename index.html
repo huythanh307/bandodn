@@ -344,8 +344,24 @@
                             layer.bindPopup(`<div class="info-popup"><h4>${feature.properties.Name}</h4></div>`);
                         }
                     }
-                }).addTo(map);
+                });
+                updateDt609Visibility();
             });
+
+        function updateDt609Visibility() {
+            if (!dt609Layer) return;
+            if (map.getZoom() >= 12) {
+                if (!map.hasLayer(dt609Layer)) {
+                    dt609Layer.addTo(map);
+                }
+            } else {
+                if (map.hasLayer(dt609Layer)) {
+                    map.removeLayer(dt609Layer);
+                }
+            }
+        }
+
+        map.on('zoomend', updateDt609Visibility);
 
         // HÀM CHỌN ĐƯỜNG: Phóng to + Bôi đỏ + Làm dày
         function zoomToRoad(roadName) {
