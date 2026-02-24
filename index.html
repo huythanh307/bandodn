@@ -205,7 +205,7 @@
         L.control.layers(baseMaps).addTo(map);
 
         // Lớp dữ liệu GeoJSON
-        let geoJsonLayer, dtLayer;
+        let geoJsonLayer, dtLayer, dt609Layer;
         // Lớp nhãn đường
         let labelLayer = L.layerGroup().addTo(map);
 
@@ -332,6 +332,19 @@
                 });
 
                 updateVisibleLabels();
+            });
+
+        // Tải dữ liệu mốc DT 609
+        fetch('DT 609.geojson')
+            .then(res => res.json())
+            .then(data => {
+                dt609Layer = L.geoJSON(data, {
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties && feature.properties.Name) {
+                            layer.bindPopup(`<div class="info-popup"><h4>${feature.properties.Name}</h4></div>`);
+                        }
+                    }
+                }).addTo(map);
             });
 
         // HÀM CHỌN ĐƯỜNG: Phóng to + Bôi đỏ + Làm dày
