@@ -156,6 +156,19 @@
             pointer-events: none;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
+
+        .dt609-label {
+            background: none;
+            color: rgb(6, 2, 252);
+            padding: 0;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            border: none;
+            text-shadow: #eee 2px 2px 4px;
+            pointer-events: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 
@@ -339,9 +352,20 @@
             .then(res => res.json())
             .then(data => {
                 dt609Layer = L.geoJSON(data, {
+                    pointToLayer: function (feature, latlng) {
+                        const label = (feature.properties && (feature.properties.Name || feature.properties.name)) || "";
+                        return L.marker(latlng, {
+                            icon: L.divIcon({
+                                className: 'dt609-label',
+                                html: `<div>${label}</div>`,
+                                iconSize: [0, 0]
+                            })
+                        });
+                    },
                     onEachFeature: function (feature, layer) {
-                        if (feature.properties && feature.properties.Name) {
-                            layer.bindPopup(`<div class="info-popup"><h4>${feature.properties.Name}</h4></div>`);
+                        const label = feature.properties && (feature.properties.Name || feature.properties.name);
+                        if (label) {
+                            layer.bindPopup(`<div class="info-popup"><h4>${label}</h4></div>`);
                         }
                     }
                 });
@@ -350,7 +374,7 @@
 
         function updateDt609Visibility() {
             if (!dt609Layer) return;
-            if (map.getZoom() >= 12) {
+            if (map.getZoom() >= 14) {
                 if (!map.hasLayer(dt609Layer)) {
                     dt609Layer.addTo(map);
                 }
