@@ -626,89 +626,14 @@
         {
             "type": "Feature",
             "properties": {
-                "Name": "Km4 + 500",
-                "icon": null
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    108.21028833,
-                    15.87874333,
-                    -6.2
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "Name": "Km4 + 600",
-                "icon": null
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    108.210215,
-                    15.87861167,
-                    -6.7
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "Name": "Km20 + 900",
-                "icon": null
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    108.07114,
-                    15.87848333,
-                    0.2
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "Name": "Km36 + 900",
-                "icon": null
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.93882,
-                    15.84709,
-                    7.5
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "Name": "Km 40 + 609",
-                "icon": null
-            },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    107.91764,
-                    15.84951167,
-                    5.6
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
                 "Name": "Cầu Ái Nghĩa",
                 "icon": null
             },
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    108.11402333,
-                    15.882745,
+                    108.11326110747137,
+                    15.88273295854031,
                     -7.2
                 ]
             }
@@ -797,8 +722,8 @@
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    107.93538167,
-                    15.84719667,
+                    107.93474473120831,
+                    15.847145331026192,
                     0.9
                 ]
             }
@@ -812,8 +737,8 @@
             "geometry": {
                 "type": "Point",
                 "coordinates": [
-                    107.93361167,
-                    15.84489,
+                    107.93362367238537,
+                    15.844766612543841,
                     3.5
                 ]
             }
